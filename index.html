@@ -1,0 +1,801 @@
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>VOID RELICS | Combat Protocol</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --p-color: #00f2ff; --e-color: #ff2d55; --violet: #a100ff; --orange: #ff6a00; --gold: #ffea00; --crystal: #ff00ff; --cyan: #00ffff; --scarlet: #ff2400; --kinetic: #00ffaa; --titanium: #999999; --siphon: #ff0044; --paradox: #ffffff; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: 'Orbitron', sans-serif; user-select: none; }
+        canvas { position: fixed; top: 0; left: 0; }
+        #space-bg { z-index: 1; transition: transform 2.5s ease; }
+        #game-canvas { z-index: 100; touch-action: none; }
+        .ui-layer { position: absolute; width: 100%; top: 15px; z-index: 150; display: flex; justify-content: space-around; pointer-events: none; }
+        .hp-group { width: 45%; text-align: center; }
+        .hp-bar { height: 12px; background: rgba(255,255,255,0.1); border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); position: relative; }
+        .hp-fill { height: 100%; width: 100%; transition: width 0.4s ease; }
+        #p-hp-fill { background: var(--p-color); box-shadow: 0 0 10px var(--p-color); }
+        #e-hp-fill { background: var(--e-color); box-shadow: 0 0 10px var(--e-color); }
+        .energy-bar-wrap { width: 90%; height: 6px; background: rgba(0,0,0,0.6); margin: 6px auto; border-radius: 3px; border: 1px solid #fff; display: none; overflow: hidden; }
+        .energy-fill { height: 100%; width: 0%; transition: width 0.3s ease; }
+        .hp-val { color: white; font-size: 9px; margin-top: 5px; letter-spacing: 1px; line-height: 1.4; font-weight: bold; text-shadow: 1px 1px 2px #000; }
+        #battle-msg { position: fixed; top: 45%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 11px; text-align: center; z-index: 200; pointer-events: none; opacity: 0; transition: 0.3s; font-weight: bold; background: rgba(0,0,0,0.95); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.4); min-width: 270px; white-space: pre-line; box-shadow: 0 0 40px rgba(0,0,0,1); }
+        #orbit-system { position: absolute; width: 100%; height: 100%; z-index: 10; transition: transform 2.5s cubic-bezier(0.6, -0.2, 0.4, 1.2); }
+        .core { position: absolute; left: 50%; width: 75px; height: 75px; margin-left: -37.5px; border-radius: 50%; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .player-core { bottom: 15%; background: radial-gradient(circle at 35% 35%, #fff, var(--p-color)); box-shadow: 0 0 30px var(--p-color); }
+        .enemy-core { top: 15%; background: radial-gradient(circle at 35% 35%, #fff, var(--e-color)); box-shadow: 0 0 20px var(--e-color); }
+        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; }
+        .artifact-zone { display: flex; flex-wrap: wrap; justify-content: center; max-width: 600px; padding: 20px; }
+.artifact-card { 
+    border: 2px solid #444; 
+    padding: 12px; 
+    width: 85px; 
+    cursor: pointer; 
+    border-radius: 10px; 
+    text-align: center; 
+    font-size: 9px; 
+    margin: 5px; 
+    background: #111; 
+    transition: 0.2s;
+    
+    color: #ffffff; 
+    font-weight: bold;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}    
+button { background: none; border: 2px solid var(--p-color); color: white; padding: 12px 30px; font-family: 'Orbitron'; cursor: pointer; margin-top: 20px; border-radius: 4px; }
+        #ultimate-flash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 300; opacity: 0; pointer-events: none; }
+    .overlay-screen {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.95);
+    z-index: 600;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.menu-buttons button {
+    width: 250px;
+}
+
+#ingame-menu {
+    position: fixed;
+    bottom: 20px; 
+    left: 50%;  
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: none;
+}
+
+#ingame-menu button {
+    padding: 8px 20px;
+    font-size: 11px;
+    border: 1px solid rgba(255,255,255,0.4);
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    border-radius: 20px; 
+    backdrop-filter: blur(5px);
+    letter-spacing: 1px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.5);
+}
+    </style>
+</head>
+<body>
+    <div id="ultimate-flash"></div>
+    <div id="battle-msg"></div>
+<div id="main-menu" class="overlay-screen">
+    <h1 style="color: var(--p-color); font-size: 32px; text-shadow: 0 0 20px var(--p-color); letter-spacing: 4px;">VOID RELICS</h1>
+    <p style="color: #aaa; font-size: 10px; margin-bottom: 30px; letter-spacing: 2px;">DESENVOLVIDO POR ALEKS20X</p>
+    
+    <div class="menu-buttons">
+        <button onclick="showScreen('selection-screen')">INICIAR</button>
+        <button onclick="showScreen('rules-screen')">MANUAL DE COMBATE</button>
+        <button onclick="window.open('https://aleks20x.github.io/', '_blank')">MEUS OUTROS PROJETOS 🚀</button>
+        <button onclick="window.close()">SAIR</button>
+    </div>
+    
+<div style="margin-top: 40px;">
+    <button id="copy-pix-btn" style="border-color: var(--gold); color: var(--gold); font-size: 10px;" onclick="copyPix()">
+        ☕ APOIAR DESENVOLVEDOR VIA PIX QUALQUER VALOR
+    </button>
+</div>
+</div>
+
+<div id="selection-screen" class="overlay-screen" style="display:none">
+    <h2 id="title-msg" style="color: var(--p-color);">SELECIONE SEU ARTEFATO</h2>
+    <p id="artifact-desc" style="color: #fff; font-size: 11px; height: 45px; margin-bottom: 15px; padding: 0 20px; line-height: 1.4;"></p>
+    
+    <div id="selection-zone" class="artifact-zone" style="max-height: 60vh; overflow-y: auto;">
+        <div class="artifact-card" style="border-color:var(--violet)" 
+    onmouseover="describe('FÍSICO: (Ativo) Multiplica o Dano Físico pelo valor do Dado Especial (até 6x).')" 
+    onclick="selectArtifact('physical', this)">🟣<br>FÍSICO</div>
+
+<div class="artifact-card" style="border-color:var(--orange)" 
+    onmouseover="describe('ELEMENTAL: (Ativo) Multiplica o Dano de Elementos (Amarelo) e Veneno pelo Dado Especial.')" 
+    onclick="selectArtifact('elemental', this)">🟠<br>ELEMENTAL</div>
+
+<div class="artifact-card" style="border-color:var(--gold)" 
+    onmouseover="describe('ENERGIA: (Passivo) +10 HP e +10 Armadura por turno. (Ativo) Acumula 20 pontos para causar 100 de dano.')" 
+    onclick="selectArtifact('energy', this)">🟡<br>ENERGIA</div>
+
+<div class="artifact-card" style="border-color:var(--crystal)" 
+    onmouseover="describe('CRISTAL: (Ativo) Foca todo o poder no Dado Especial (1 a 4). Multiplica tanto Físico quanto Elemental.')" 
+    onclick="selectArtifact('crystal', this)">💎<br>CRISTAL</div>
+
+<div class="artifact-card" style="border-color:var(--cyan)" 
+    onmouseover="describe('DEBUFF: (Ativo) Causa 10 de dano direto e reduz a defesa inimiga baseado no Dado Especial.')" 
+    onclick="selectArtifact('debuff', this)">❄️<br>DEBUFF</div>
+
+<div class="artifact-card" style="border-color:var(--scarlet)" 
+    onmouseover="describe('RÁPIDO: (Passivo) +5 HP e Armadura. (Ativo) Ultimate de 100 de dano carrega com apenas 10 pontos.')" 
+    onclick="selectArtifact('fast_energy', this)">🏮<br>RÁPIDO</div>
+
+<div class="artifact-card" style="border-color:var(--kinetic)" 
+    onmouseover="describe('CINÉTICO: (Passivo) +10 Armadura. (Ativo) Converte parte do dano do turno anterior em bônus para o atual.')" 
+    onclick="selectArtifact('kinetic', this)">🌀<br>CINÉTICO</div>
+
+<div class="artifact-card" style="border-color:var(--titanium)" 
+    onmouseover="describe('TITÂNIO: (Passivo) +10 HP. (Ativo) Reflete parte do dano recebido no turno inimigo de volta para ele.')" 
+    onclick="selectArtifact('titanium', this)">🛡️<br>TITÂNIO</div>
+
+<div class="artifact-card" style="border-color:var(--siphon)" 
+    onmouseover="describe('SIFÃO: (Ativo) Rouba HP do inimigo baseado no seu dano causado e ganha Regeneração por 2 turnos.')" 
+    onclick="selectArtifact('siphon', this)">🩸<br>SIFÃO</div>
+
+<div class="artifact-card" style="border-color:#fff; background: linear-gradient(45deg, #222, #555)" 
+    onmouseover="describe('METAMORFO: (Caos) A cada turno, assume o poder de um dos outros artefatos aleatoriamente.')" 
+    onclick="selectArtifact('morph', this)">🧬<br>METAMORFO</div>
+
+<div class="artifact-card" style="border-color:#fff; box-shadow: 0 0 10px #fff" 
+    onmouseover="describe('PARADOXO: (Sorte) Adiciona dados extras. Ativa Golpe Duplo se qualquer combinação de dados somar 6 ou 20.')" 
+    onclick="selectArtifact('paradox', this)">❌<br>PARADOXO</div> 
+    </div>
+
+    <div id="start-action" style="display:none">
+        <button onclick="confirmStart()" style="background: var(--p-color); color: #000; font-weight: bold;">INICIAR BATALHA</button>
+    </div>
+    
+    <button onclick="showScreen('main-menu')" style="border-color:#555; font-size: 10px; padding: 8px 20px;">VOLTAR</button>
+</div>
+
+<div id="rules-screen" class="overlay-screen" style="display:none; background: rgba(0,0,0,0.98); flex-direction: column; align-items: center; justify-content: center;">
+    
+    <h2 style="color: var(--gold); text-shadow: 0 0 15px rgba(255, 234, 0, 0.4); font-size: 20px; margin-bottom: 30px;">MANUAL DE COMBATE</h2>
+    
+    <div style="width: 260px; color: #fff; font-size: 11px; line-height: 1.6; display: flex; flex-direction: column; gap: 15px;">
+        
+        <div style="text-align: center;">
+            <span style="color: var(--p-color); font-weight: bold; display: block;">🎲 LANÇAMENTO</span>
+            <span style="opacity: 0.8;">Arraste e solte para lançar.<br>Força e direção mudam a velocidade.</span>
+        </div>
+
+        <div style="text-align: center;">
+            <span style="color: #fff; font-weight: bold; display: block;">⚪ DADOS BRANCOS</span>
+            <span style="opacity: 0.8;">Soma = Dano Físico.<br>2 iguais = Reparo. 3 iguais = Turno Extra.</span>
+        </div>
+
+        <div style="text-align: center;">
+            <span style="color: var(--gold); font-weight: bold; display: block;">🎨 SUPORTE COLORIDO</span>
+            <span style="opacity: 0.8;">Amarelo: Elemental. Verde: Veneno.<br>Preto: Armadura.</span>
+        </div>
+
+        <div style="text-align: center;">
+            <span style="color: var(--scarlet); font-weight: bold; display: block;">⚠️ CRÍTICO E DEFESA</span>
+            <span style="opacity: 0.8;">Soma 6 ou 20 dobra o dano.<br>Armadura protege o HP.</span>
+        </div>
+
+    </div>
+
+    <button onclick="showScreen('main-menu')" style="
+        margin-top: 35px;
+        width: 200px;
+        padding: 10px;
+        border: 1px solid rgba(255,255,255,0.4);
+        background: rgba(255,255,255,0.05);
+        color: #fff;
+        border-radius: 25px;
+        font-family: 'Orbitron';
+        letter-spacing: 1px;
+    ">ENTENDIDO</button>
+</div>
+
+    <div class="ui-layer">
+        <div class="hp-group">
+            <div class="hp-bar"><div id="p-hp-fill" class="hp-fill"></div></div>
+            <div id="p-energy-wrap" class="energy-bar-wrap"><div id="p-energy-fill" class="energy-fill"></div></div>
+            <div id="p-label" class="hp-val"></div>
+        </div>
+        <div class="hp-group">
+            <div class="hp-bar"><div id="e-hp-fill" class="hp-fill"></div></div>
+            <div id="e-energy-wrap" class="energy-bar-wrap"><div id="e-energy-fill" class="energy-fill"></div></div>
+            <div id="e-label" class="hp-val"></div>
+        </div>
+    </div>
+<div id="ingame-menu">
+    <button onclick="abortGame()">ABANDONAR BATALHA</button>
+</div>
+
+    <canvas id="space-bg"></canvas>
+    <canvas id="game-canvas"></canvas>
+    <div id="orbit-system">
+        <div id="enemy-core" class="core enemy-core"></div>
+        <div id="player-core" class="core player-core"></div>
+    </div>
+
+<script>
+    const bgCanvas = document.getElementById('space-bg'), bctx = bgCanvas.getContext('2d');
+    const gameCanvas = document.getElementById('game-canvas'), gctx = gameCanvas.getContext('2d');
+    let w, h, stars = [], diceArray = [], isTouching = false;
+    let touchPos = {x:0, y:0}, lastTouchPos = {x:0, y:0}, isPlayerTurn = true, isTransitioning = true;
+    let turnCount = 0, floatAnim = 0, shake = 0, extraTurn = false;
+
+    let pState = { hp: 500, maxHp: 500, armor: 0, vPower: 0, vTurns: 0, regenQueue: [], energy: 0, artifact: null, morphTarget: null, debuffFactor: 1, lastDmgDealt: 0 };
+    let eState = { hp: 500, maxHp: 500, armor: 0, vPower: 0, vTurns: 0, regenQueue: [], energy: 0, artifact: null, morphTarget: null, debuffFactor: 1, lastDmgDealt: 0 };
+
+let selectedChoice = null;
+
+function selectArtifact(choice, element) {
+    selectedChoice = choice;
+
+    document.querySelectorAll('.artifact-card').forEach(card => card.style.backgroundColor = '#111');
+    element.style.backgroundColor = 'rgba(255,255,255,0.2)';
+    
+    document.getElementById('start-action').style.display = 'block';
+}
+
+function confirmStart() {
+    if(selectedChoice) {
+        startGame(selectedChoice);
+    }
+}
+
+function startGame(choice) {
+    pState.artifact = choice;
+    const choices = ['physical', 'elemental', 'energy', 'crystal', 'debuff', 'fast_energy', 'kinetic', 'titanium', 'siphon', 'paradox'];
+    eState.artifact = choices[Math.floor(Math.random()*choices.length)];
+    
+    setupEnergyBar('p', pState.artifact); 
+    setupEnergyBar('e', eState.artifact);
+    
+    document.getElementById('main-menu').style.display = 'none';
+    document.getElementById('selection-screen').style.display = 'none';
+    
+    document.getElementById('ingame-menu').style.display = 'block'; 
+    
+    isPlayerTurn = Math.random() > 0.5;
+    createDiceSet();
+    
+    if(!isPlayerTurn) { 
+        document.getElementById('orbit-system').style.transform = `rotate(180deg)`; 
+        bgCanvas.style.transform = `rotate(180deg)`; 
+        setTimeout(enemyPlay, 1000); 
+    }
+    
+    isTransitioning = false; 
+    updateScales(); 
+    updateUI(); 
+}
+
+function showScreen(screenId) {
+    document.getElementById('main-menu').style.display = 'none';
+    document.getElementById('selection-screen').style.display = 'none';
+    document.getElementById('rules-screen').style.display = 'none';
+    
+    document.getElementById('ingame-menu').style.display = 'none'; 
+    
+    document.getElementById(screenId).style.display = 'flex';
+}
+
+function describe(txt) {
+    document.getElementById('artifact-desc').innerText = txt;
+}
+    
+    function createExplosion(x, y, color) {
+    for (let i = 0; i < 15; i++) {
+        particles.push(new Particle(x, y, color));
+    }
+}
+
+    function createDiceSet() {
+        const atk = isPlayerTurn ? pState : eState;
+        if(atk.artifact === 'paradox') {
+            const colors = ['#FFFFFF','#FFFFFF','#FFFFFF','#FFFFFF','#FFFFFF','#FFFFFF','#FFFF00','#FFFF00','#00FF00','#00FF00','#151515','#151515'];
+            diceArray = [new Die('#ffffff', 0, true), ...colors.map((c,i)=>new Die(c, i+1))];
+        } else {
+            const colors = ['#FFFFFF','#FFFFFF','#FFFFFF','#FFFF00','#151515','#00FF00'];
+            diceArray = [new Die('#fff', 0, true), ...colors.map((c,i)=>new Die(c, i+1))];
+        }
+    }
+
+    function setupEnergyBar(side, art) {
+        const wrap = document.getElementById(`${side}-energy-wrap`);
+        if(['energy', 'fast_energy', 'morph'].includes(art)) wrap.style.display = 'block'; 
+    }
+    
+    function copyPix() {
+    const pixKey = "2bf45462-3260-43c2-8f83-ea9354f641af";
+    const btn = document.getElementById('copy-pix-btn');
+
+    navigator.clipboard.writeText(pixKey).then(() => {
+        const originalText = btn.innerHTML;
+        btn.innerHTML = "✅ CHAVE COPIADA!";
+        btn.style.borderColor = "#00FF00";
+        btn.style.color = "#00FF00";
+
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.style.borderColor = "var(--gold)";
+            btn.style.color = "var(--gold)";
+        }, 2000);
+    }).catch(err => {
+        console.error('Erro ao copiar: ', err);
+        alert("Chave Pix: " + pixKey);
+    });
+}
+    
+function abortGame() {
+    if(confirm("Deseja abandonar a batalha atual?")) {
+        // Reseta estados
+        pState = { hp: 500, maxHp: 500, armor: 0, vPower: 0, vTurns: 0, regenQueue: [], energy: 0, artifact: null, morphTarget: null, debuffFactor: 1, lastDmgDealt: 0 };
+        eState = { hp: 500, maxHp: 500, armor: 0, vPower: 0, vTurns: 0, regenQueue: [], energy: 0, artifact: null, morphTarget: null, debuffFactor: 1, lastDmgDealt: 0 };
+        
+        diceArray = [];
+        particles = [];
+        
+        document.getElementById('ingame-menu').style.display = 'none';
+        showScreen('main-menu');
+        
+        document.getElementById('orbit-system').style.transform = `rotate(0deg)`;
+        bgCanvas.style.transform = `rotate(0deg)`;
+        document.getElementById('battle-msg').style.opacity = 0;
+    }
+}
+
+    class Star {
+        constructor() { this.init(); }
+        init() { this.x = Math.random()*w-w/2; this.y = Math.random()*h-h/2; this.z = Math.random()*w; }
+        update() { let ds = (isPlayerTurn ? 1 : -1) * (2 + (turnCount * 0.2)); this.z -= ds; if(this.z<1) this.init(); if(this.z>w) this.z=1; }
+        draw() { let sx = (this.x/this.z)*(w/2)+w/2, sy = (this.y/this.z)*(h/2)+h/2, r = (1-this.z/w)*2; bctx.beginPath(); bctx.fillStyle=`rgba(255,255,255,${1-this.z/w})`; bctx.arc(sx,sy,r,0,7); bctx.fill(); }
+    }
+    
+    class Particle {
+    constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.size = Math.random() * 4 + 2;
+        this.vx = (Math.random() - 0.5) * 10;
+        this.vy = (Math.random() - 0.5) * 10;
+        this.life = 1.0;
+        this.decay = Math.random() * 0.05 + 0.02;
+    }
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.life -= this.decay;
+    }
+    draw() {
+        gctx.save();
+        gctx.globalAlpha = this.life;
+        gctx.fillStyle = this.color;
+        
+        gctx.shadowBlur = 10;
+        gctx.shadowColor = this.color; 
+        // ------------------------------
+        
+        gctx.beginPath();
+        gctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        gctx.fill();
+        
+        gctx.restore();
+    }
+}
+
+let particles = [];
+
+    class Die {
+        constructor(color, index, isSpec = false) { 
+            this.baseColor = color; this.index = index; this.isSpec = isSpec;
+            this.clusterOffX = (index % 4 - 1.5) * 45; this.clusterOffY = (Math.floor(index / 4) - 1.5) * 45;
+            this.reset(); 
+        }
+        reset() { 
+            this.x = w - 60; this.y = (h*0.4)+(this.index*30); this.vx = 0; this.vy = 0; this.angle = 0; this.isL = false; this.isS = false; this.value = 1; 
+            this.color = this.baseColor;
+            let atk = isPlayerTurn ? pState : eState;
+            if(this.isSpec && atk.artifact === 'morph') { atk.morphTarget = null; this.color = '#fff'; }
+        }
+roll() { 
+    let atk = isPlayerTurn ? pState : eState;
+    let art = (atk.artifact === 'morph' && atk.morphTarget) ? atk.morphTarget : atk.artifact;
+    
+    this.angle += (Math.random() - 0.5) * 2;
+
+    if(this.isSpec) { 
+        if(atk.artifact === 'morph' && !atk.morphTarget) this.value = Math.floor(Math.random()*9)+1;
+        else if(art === 'paradox') this.value = 1;
+        else {
+            if(['crystal', 'debuff', 'fast_energy'].includes(art)) this.value = Math.floor(Math.random()*4)+1; 
+            else if(['kinetic', 'titanium', 'siphon'].includes(art)) this.value = Math.floor(Math.random()*8)+1; 
+            else this.value = Math.floor(Math.random()*6)+1; 
+        }
+        this.color = this.getSpecColor(art); 
+    } else {
+
+        let newValue = Math.floor(Math.random()*6)+1;
+        this.value = newValue;
+    }
+}     
+getSpecColor(art) { const map = { physical:'#a100ff', elemental:'#ff6a00', energy:'#ffea00', crystal:'#ff00ff', debuff:'#00ffff', fast_energy:'#ff2400', kinetic:'#00ffaa', titanium:'#999999', siphon:'#ff0044', morph:'#fff', paradox:'#ffffff' }; return map[art] || '#fff'; }
+        update() { 
+            if(isTouching && !this.isL) { 
+                this.x += (touchPos.x + this.clusterOffX - this.x) * 0.22; 
+                this.y += (touchPos.y + this.clusterOffY - this.y) * 0.22; this.angle += 0.12; 
+            } else if(this.isL && !this.isS) { 
+                this.x += this.vx; this.y += this.vy; this.vx *= 0.985; this.vy *= 0.985; this.angle += (this.vx + this.vy) * 0.05;
+                const m = 25;
+                if(this.x<m||this.x>w-m) { this.vx*=-0.85; this.roll(); this.x = this.x<m?m:w-m; }
+                if(this.y<m||this.y>h-m) { this.vy*=-0.85; this.roll(); this.y = this.y<m?m:h-m; }
+                diceArray.forEach(o => {
+                    if(o === this) return;
+                    let dx = o.x-this.x, dy = o.y-this.y, d = Math.sqrt(dx*dx+dy*dy);
+                    if(d < 42) {
+                        let ang = Math.atan2(dy, dx), f = (42-d)*0.7;
+                        this.vx -= Math.cos(ang)*f; this.vy -= Math.sin(ang)*f;
+                        o.vx += Math.cos(ang)*f; o.vy += Math.sin(ang)*f;
+                        if(d<35) { this.roll(); o.roll(); }
+                    }
+                });
+                if(Math.abs(this.vx)<0.3 && Math.abs(this.vy)<0.3) { this.isS = true; this.vx = 0; this.vy = 0; } 
+            } 
+        }
+        draw() { 
+            gctx.save(); gctx.translate(this.x, this.y); gctx.rotate(this.angle); 
+            let atk = isPlayerTurn ? pState : eState;
+            let art = (atk.artifact === 'morph' && atk.morphTarget) ? atk.morphTarget : atk.artifact;
+            
+            if(this.isSpec && art === 'paradox') {
+                gctx.fillStyle = "#fff"; gctx.shadowBlur = 15; gctx.shadowColor = "#fff";
+                gctx.fillRect(-18,-18,36,36); gctx.strokeStyle="#000"; gctx.lineWidth=3;
+                gctx.beginPath(); gctx.moveTo(-10,-10); gctx.lineTo(10,10); gctx.moveTo(10,-10); gctx.lineTo(-10,10); gctx.stroke();
+            } else if(this.isSpec && atk.artifact === 'morph' && !atk.morphTarget) {
+                gctx.fillStyle = "#fff"; gctx.shadowBlur = 20; gctx.shadowColor = "#fff";
+                gctx.beginPath(); for(let i=0; i<10; i++){ let r = i%2===0?25:12; let a = (i/10)*Math.PI*2; gctx.lineTo(Math.cos(a)*r, Math.sin(a)*r); }
+                gctx.closePath(); gctx.fill(); gctx.fillStyle="#000"; gctx.font="bold 18px Orbitron"; gctx.textAlign="center"; gctx.textBaseline="middle";
+                gctx.fillText(this.value, 0, 2);
+            } else {
+                gctx.fillStyle = this.color; if(this.isSpec) { gctx.shadowBlur = 15; gctx.shadowColor = this.color; }
+                if(this.isSpec && ['crystal','debuff','fast_energy','kinetic','titanium','siphon'].includes(art)) {
+                    gctx.beginPath(); const s = (['kinetic','titanium','siphon'].includes(art))?8:3;
+                    if(s===3) { gctx.moveTo(0,-22); gctx.lineTo(20,14); gctx.lineTo(-20,14); }
+                    else { for(let i=0; i<8; i++){ let a = (i/8)*Math.PI*2; gctx.lineTo(Math.cos(a)*20, Math.sin(a)*20); } }
+                    gctx.closePath(); gctx.fill(); gctx.strokeStyle="#fff"; gctx.stroke(); this.drawNum();
+                } else {
+                    gctx.fillRect(-18,-18,36,36); gctx.strokeStyle="#fff"; gctx.lineWidth=1; gctx.strokeRect(-18,-18,36,36); this.drawDots();
+                }
+            }
+            gctx.restore(); 
+        }
+        drawDots() { const dots = {1:[[0,0]], 2:[[-9,-9],[9,9]], 3:[[-9,-9],[0,0],[9,9]], 4:[[-9,-9],[9,-9],[-9,9],[9,9]], 5:[[-9,-9],[9,-9],[0,0],[-9,9],[9,9]], 6:[[-9,-9],[9,-9],[-9,0],[9,0],[-9,9],[9,9]]}; gctx.fillStyle = (this.color==='#151515'||this.isSpec)?"#fff":"#000"; dots[this.value].forEach(p => { gctx.beginPath(); gctx.arc(p[0],p[1],4,0,7); gctx.fill(); }); }
+        drawNum() { gctx.fillStyle="#fff"; gctx.font="bold 18px Orbitron"; gctx.textAlign="center"; gctx.textBaseline="middle"; gctx.fillText(this.value, 0, 2); }
+    }
+
+    function checkParadoxRule(dice) {
+        const whites = dice.filter(d => d.baseColor === '#FFFFFF').map(d => d.value);
+        const yellows = dice.filter(d => d.baseColor === '#FFFF00').map(d => d.value);
+        const greens = dice.filter(d => d.baseColor === '#00FF00').map(d => d.value);
+        const blacks = dice.filter(d => d.baseColor === '#151515').map(d => d.value);
+
+        for (let y of yellows) {
+            for (let g of greens) {
+                for (let k of blacks) {
+                    for (let i = 0; i < whites.length; i++) {
+                        for (let j = i + 1; j < whites.length; j++) {
+                            for (let l = j + 1; l < whites.length; l++) {
+                                let sum = y + g + k + whites[i] + whites[j] + whites[l];
+                                if (sum === 6 || sum === 20) return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    async function processRules() {
+        isTransitioning = true;
+        while(!diceArray.every(d => d.isS)) await new Promise(r => setTimeout(r, 100));
+        await new Promise(r => setTimeout(r, 600));
+
+        let atk = isPlayerTurn ? pState : eState, def = isPlayerTurn ? eState : pState;
+        let specDie = diceArray.find(d => d.isSpec);
+        let logs = [];
+
+        if(atk.artifact === 'morph') {
+            const map = { 1:'crystal', 2:'debuff', 3:'fast_energy', 4:'physical', 5:'elemental', 6:'energy', 7:'kinetic', 8:'titanium', 9:'siphon' };
+            atk.morphTarget = map[specDie.value] || 'physical';
+            logs.push(`🌈 DNA: ${atk.morphTarget.toUpperCase()}`);
+            specDie.isS = false; specDie.vy = -18; specDie.vx = (Math.random()-0.5)*15;
+            specDie.roll();
+            while(!specDie.isS) await new Promise(r => setTimeout(r, 50));
+            await new Promise(r => setTimeout(r, 400));
+        }
+
+        const activeArt = (atk.artifact === 'morph') ? atk.morphTarget : atk.artifact;
+        const whites = diceArray.filter(d => d.baseColor === '#FFFFFF');
+        const dColor = diceArray.filter(d => ['#FFFF00','#151515','#00FF00'].includes(d.baseColor));
+        
+        let currentDebuff = atk.debuffFactor;
+        let mEle = (activeArt === 'elemental') ? specDie.value / currentDebuff : 1 / currentDebuff;
+        let mPhy = (activeArt === 'physical') ? specDie.value / currentDebuff : 1 / currentDebuff;
+        if(activeArt === 'crystal') { mEle = mPhy = specDie.value / currentDebuff; logs.push(`💎 FOCO: x${specDie.value}`); }
+
+        let pMult = 1;
+        if(activeArt === 'paradox') {
+            if(checkParadoxRule(diceArray)) pMult = 2;
+        } else {
+            let bSum = diceArray.filter(d => !d.isSpec).reduce((s,d)=>s+d.value,0);
+            if(bSum === 6 || bSum === 20) pMult = 2;
+        }
+        if(pMult === 2) logs.push(`🔥 GOLPE DUPLO!`);
+
+        let ultDmg = 0;
+        if(['energy', 'fast_energy'].includes(activeArt)) {
+            let maxE = (activeArt === 'fast_energy') ? 10 : 20;
+            atk.energy = Math.min(maxE, atk.energy + specDie.value);
+            if(atk.energy >= maxE) { ultDmg = 100; atk.energy = 0; logs.push(`💥 ULTIMATE: 100!`); triggerUltAnim(); }
+        }
+
+        let wVals = whites.map(d => d.value), wCounts = {}; wVals.forEach(v => wCounts[v] = (wCounts[v] || 0) + 1);
+        let extraTurnFound = false;
+        for(let v in wCounts) {
+            if(wCounts[v] >= 2) { 
+                let c = parseInt(v)*2; atk.hp = Math.min(atk.maxHp, atk.hp + c); logs.push(`⚪ REPARO: +${c}`); 
+            }
+            if(wCounts[v] >= 3 && !extraTurnFound) { 
+                extraTurn = true; extraTurnFound = true; logs.push(`⭐ SOBRECARGA!`); 
+            }
+        }
+
+        let cVals = dColor.map(d => d.value), cCounts = {}; cVals.forEach(v => cCounts[v] = (cCounts[v] || 0) + 1);
+        for(let v in cCounts) {
+            if(cCounts[v] >= 2) {
+                let rV = parseInt(v) * cCounts[v];
+                atk.regenQueue.push({v: rV, t: 3});
+                logs.push(`🌀 REGEN: +${rV} (3t)`);
+            }
+        }
+
+        if(activeArt === 'energy') { atk.hp = Math.min(atk.maxHp, atk.hp+10); atk.armor+=10; logs.push(`🟡 SUSTENTO +10`); }
+        if(activeArt === 'fast_energy') { atk.hp = Math.min(atk.maxHp, atk.hp+5); atk.armor+=5; logs.push(`🏮 RÁPIDO +5`); }
+        if(activeArt === 'kinetic') { atk.armor+=10; logs.push(`🌀 CINÉTICO +10`); }
+        if(activeArt === 'titanium') { atk.hp = Math.min(atk.maxHp, atk.hp+10); logs.push(`🛡️ TITÂNIO +10`); }
+
+        let dY = diceArray.filter(d => d.baseColor === '#FFFF00').reduce((s,d)=>s+d.value,0);
+        let dG = diceArray.filter(d => d.baseColor === '#00FF00').reduce((s,d)=>s+d.value,0);
+        let dK = diceArray.filter(d => d.baseColor === '#151515').reduce((s,d)=>s+d.value,0);
+
+        let eDmg = Math.floor(dY * mEle);
+        let vDmg = Math.floor(dG * mEle);
+        let arm = Math.floor(dK * (activeArt === 'titanium' ? specDie.value : mEle));
+        let ecoB = (activeArt === 'kinetic') ? Math.floor(atk.lastDmgDealt * (specDie.value/8)) : 0;
+        let finalPhys = Math.floor((whites.reduce((s,d)=>s+d.value,0) * mPhy * pMult) + ecoB);
+        
+        let extraDirect = (activeArt === 'debuff') ? 10 : 0;
+        applyDmg(eDmg + finalPhys, def);
+        def.hp = Math.max(0, def.hp - ultDmg - extraDirect);
+
+        if(eDmg > 0) logs.push(`🟡 ELEM: ${eDmg}`);
+        logs.push(`⚔️ FIS: ${finalPhys}`);
+        if(vDmg > 0) { def.vPower += vDmg; def.vTurns = 2; logs.push(`🟢 VEN: ${vDmg}/t`); }
+        if(arm > 0) { atk.armor += arm; logs.push(`⚫ ARM: +${arm}`); }
+        
+        if(activeArt === 'siphon') {
+            let siph = Math.floor((finalPhys + eDmg) * (specDie.value/8));
+            atk.hp = Math.min(atk.maxHp, atk.hp + siph);
+            atk.regenQueue.push({v: specDie.value, t: 2});
+            logs.push(`🩸 SIFÃO: +${siph}`);
+        }
+        if(activeArt === 'debuff') def.debuffFactor = specDie.value;
+
+        atk.lastDmgDealt = finalPhys + eDmg;
+        atk.debuffFactor = 1;
+
+        notify(logs.join("\n"), isPlayerTurn ? 'var(--p-color)' : 'var(--e-color)');
+        updateUI(); await strikeAnim(ultDmg > 0);
+
+[pState, eState].forEach(s => {
+    if(s.regenQueue.length > 0) {
+        let r = 0; s.regenQueue.forEach(b => { r += b.v; b.t--; });
+        s.hp = Math.min(s.maxHp, s.hp + r);
+        s.regenQueue = s.regenQueue.filter(b => b.t > 0);
+    }
+    if(s.vTurns > 0) {
+        s.hp -= s.vPower; s.vTurns--;
+        if(s.vTurns === 0) s.vPower = 0;
+    }
+});
+updateUI();
+
+        if(pState.hp<=0||eState.hp<=0) { handleDeath(); return; }
+        if(extraTurn) { extraTurn = false; createDiceSet(); isTransitioning = false; if(!isPlayerTurn) enemyPlay(); } 
+        else { swapTurn(); }
+    }
+
+    function triggerUltAnim() {
+        const f = document.getElementById('ultimate-flash');
+        f.style.opacity = 1;
+        setTimeout(() => f.style.opacity = 0, 150);
+        shake = 40; 
+    }
+
+    async function swapTurn() {
+        isPlayerTurn = !isPlayerTurn; turnCount++;
+        const cur = isPlayerTurn ? pState : eState, opp = isPlayerTurn ? eState : pState;
+        let art = (cur.artifact === 'morph') ? cur.morphTarget : cur.artifact;
+        
+        if(art === 'titanium') {
+            let ref = Math.floor(opp.lastDmgDealt * (diceArray.find(d=>d.isSpec).value/8));
+            if(ref>0) { applyDmg(ref, opp); notify(`🛡️ REFLEXO: ${ref}`, 'var(--titanium)'); }
+        }
+
+        updateUI(); if(pState.hp<=0||eState.hp<=0) { handleDeath(); return; }
+        document.getElementById('orbit-system').style.transform = `rotate(${isPlayerTurn?0:180}deg)`;
+        bgCanvas.style.transform = `rotate(${isPlayerTurn?0:180}deg)`;
+        updateScales(); createDiceSet(); isTransitioning=false; if(!isPlayerTurn) setTimeout(enemyPlay, 1000);
+    }
+
+    function applyDmg(v, t) { let f = v - t.armor; t.armor = Math.max(0, t.armor-v); if(f>0) t.hp = Math.max(0, t.hp-f); }
+    function notify(t, c) { const m = document.getElementById('battle-msg'); m.innerText = t; m.style.color = c; m.style.opacity = 1; setTimeout(() => { if(m.innerText===t) m.style.opacity=0; }, 4000); }
+    
+    function updateUI() {
+        document.getElementById('p-hp-fill').style.width = (pState.hp/pState.maxHp*100)+'%';
+        document.getElementById('e-hp-fill').style.width = (eState.hp/eState.maxHp*100)+'%';
+        const pR = pState.regenQueue.reduce((s, b) => s + b.v, 0), eR = eState.regenQueue.reduce((s, b) => s + b.v, 0);
+        document.getElementById('p-label').innerHTML = `HP:${Math.floor(pState.hp)} ARM:${pState.armor}<br>R:${pR} V:${pState.vPower}`;
+        document.getElementById('e-label').innerHTML = `HP:${Math.floor(eState.hp)} ARM:${eState.armor}<br>R:${eR} V:${eState.vPower}`;
+        updateEnergyDisplay('p', pState); updateEnergyDisplay('e', eState);
+    }
+
+    function updateEnergyDisplay(side, state) {
+        const art = state.morphTarget || state.artifact;
+        const fill = document.getElementById(`${side}-energy-fill`);
+        const wrap = document.getElementById(`${side}-energy-wrap`);
+        if(['energy', 'fast_energy'].includes(art)) {
+            let maxE = (art === 'fast_energy') ? 10 : 20;
+            wrap.style.display = 'block';
+            fill.style.width = (state.energy / maxE * 100) + '%';
+            fill.style.backgroundColor = (art === 'energy') ? 'var(--gold)' : 'var(--scarlet)';
+        } else wrap.style.display = 'none';
+    }
+
+async function strikeAnim(isUlt) { 
+    const isP = isPlayerTurn;
+    const c = document.getElementById(isP ? 'player-core' : 'enemy-core');
+    const pCore = document.getElementById('player-core').getBoundingClientRect();
+    const eCore = document.getElementById('enemy-core').getBoundingClientRect();
+    
+    const travelDistance = Math.abs(pCore.top - eCore.top);
+    const dist = isP ? -travelDistance : travelDistance;
+
+    c.style.transition = "transform 0.45s cubic-bezier(0.4, 0, 0.2, 1)";
+    c.style.transform = `translateY(${dist}px) scale(${isUlt ? 0.9 : 0.7})`; 
+
+    await new Promise(r => setTimeout(r, 450)); 
+    
+    const impactX = w / 2;
+    const impactY = isP ? eCore.top + (eCore.height/2) : pCore.top + (pCore.height/2);
+    
+    const color = isP ? '#00f2ff' : '#ff2d55'; 
+    
+    createExplosion(impactX, impactY, color);
+
+    shake = isUlt ? 60 : 25; 
+    c.style.transform = `translateY(0) scale(1.1)`; 
+}
+
+function handleDeath() {
+    isTransitioning = true; 
+    const vitoria = pState.hp > 0;
+    
+    document.getElementById('title-msg').innerText = vitoria ? "VITÓRIA!" : "DERROTA...";
+    
+    setTimeout(() => {
+        diceArray = [];
+        particles = [];
+        
+        document.getElementById('ingame-menu').style.display = 'none';
+        showScreen('main-menu');
+        
+        alert(vitoria ? "Protocolo Concluído: Inimigo Neutralizado!" : "Protocolo Falhou: Núcleo Corrompido.");
+    }, 1000);
+}
+
+    function updateScales() { document.getElementById('player-core').style.transform = isPlayerTurn?"scale(1.1)":"scale(0.7)"; document.getElementById('enemy-core').style.transform = isPlayerTurn?"scale(0.7)":"scale(1.1)"; }
+    function enemyPlay() { isTouching=true; touchPos={x:w/2,y:h/2}; setTimeout(()=>{ isTouching=false; diceArray.forEach(d=>{ d.roll(); d.isL=true; d.vx=(Math.random()-0.5)*35; d.vy=25; }); processRules(); },1200); }
+    function resize() { w=bgCanvas.width=gameCanvas.width=window.innerWidth; h=bgCanvas.height=gameCanvas.height=window.innerHeight; stars=Array.from({length:150},()=>new Star()); }
+    
+function getPos(e) {
+    if (e.touches && e.touches.length > 0) {
+        return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+    return { x: e.clientX, y: e.clientY };
+}
+
+const startAction = (e) => {
+    if(!isPlayerTurn || isTransitioning) return;
+    isTouching = true;
+    const pos = getPos(e);
+    touchPos = { x: pos.x, y: pos.y };
+    lastTouchPos = { ...touchPos };
+};
+
+const moveAction = (e) => {
+    if(isTouching) {
+        lastTouchPos = { ...touchPos };
+        const pos = getPos(e);
+        touchPos = { x: pos.x, y: pos.y };
+    }
+};
+
+const endAction = () => {
+    if(isTouching) {
+        isTouching = false;
+        let dx = touchPos.x - lastTouchPos.x;
+        let dy = touchPos.y - lastTouchPos.y;
+
+        if(Math.abs(dx) < 2 && Math.abs(dy) < 2) {
+            dx = (Math.random() - 0.5) * 20;
+            dy = (Math.random() - 0.5) * 20;
+        }
+
+        diceArray.forEach(d => {
+            d.roll();
+            d.isL = true;
+            d.isS = false;
+            d.vx = dx * (2.5 + Math.random() * 0.5);
+            d.vy = dy * (2.5 + Math.random() * 0.5);
+        });
+        processRules();
+    }
+};
+
+gameCanvas.addEventListener('touchstart', startAction);
+gameCanvas.addEventListener('touchmove', moveAction);
+gameCanvas.addEventListener('touchend', endAction);
+
+gameCanvas.addEventListener('mousedown', startAction);
+window.addEventListener('mousemove', moveAction);
+window.addEventListener('mouseup', endAction);
+    window.addEventListener('resize', resize); resize();
+    
+    function loop() { 
+        floatAnim+=0.04; 
+        bctx.fillStyle='#000'; bctx.fillRect(0,0,w,h); 
+        stars.forEach(s=>{s.update(); s.draw();}); 
+        gctx.clearRect(0,0,w,h);
+    particles = particles.filter(p => p.life > 0);
+    particles.forEach(p => { p.update(); p.draw(); });
+
+        if(shake > 0) { gctx.translate(Math.random()*shake-shake/2, Math.random()*shake-shake/2); shake *= 0.9; }
+        diceArray.forEach(d=> { d.update(); d.draw(); }); 
+        gctx.setTransform(1,0,0,1,0,0);
+        requestAnimationFrame(loop); 
+    }
+    loop();
+</script>
+</body>
+</html>
