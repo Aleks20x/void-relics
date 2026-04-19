@@ -37,7 +37,7 @@
     margin: 5px; 
     background: #111; 
     transition: 0.2s;
-    
+
     color: #ffffff; 
     font-weight: bold;
     display: flex;
@@ -90,6 +90,17 @@ button { background: none; border: 2px solid var(--p-color); color: white; paddi
     letter-spacing: 1px;
     box-shadow: 0 0 15px rgba(0,0,0,0.5);
 }
+.relic-name {
+    color: #fff;
+    font-size: 10px;
+    letter-spacing: 2px;
+    margin-top: 2px;
+    text-transform: uppercase;
+    opacity: 0.9;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(255,255,255,0.3);
+}
+
     </style>
 </head>
 <body>
@@ -98,14 +109,14 @@ button { background: none; border: 2px solid var(--p-color); color: white; paddi
 <div id="main-menu" class="overlay-screen">
     <h1 style="color: var(--p-color); font-size: 32px; text-shadow: 0 0 20px var(--p-color); letter-spacing: 4px;">VOID RELICS</h1>
     <p style="color: #aaa; font-size: 10px; margin-bottom: 30px; letter-spacing: 2px;">DESENVOLVIDO POR ALEKS20X</p>
-    
+
     <div class="menu-buttons">
         <button onclick="showScreen('selection-screen')">INICIAR</button>
         <button onclick="showScreen('rules-screen')">MANUAL DE COMBATE</button>
         <button onclick="window.open('https://aleks20x.github.io/', '_blank')">MEUS OUTROS PROJETOS 🚀</button>
         <button onclick="window.close()">SAIR</button>
     </div>
-    
+
 <div style="margin-top: 40px;">
     <button id="copy-pix-btn" style="border-color: var(--gold); color: var(--gold); font-size: 10px;" onclick="copyPix()">
         ☕ APOIAR DESENVOLVEDOR VIA PIX QUALQUER VALOR
@@ -116,7 +127,7 @@ button { background: none; border: 2px solid var(--p-color); color: white; paddi
 <div id="selection-screen" class="overlay-screen" style="display:none">
     <h2 id="title-msg" style="color: var(--p-color);">SELECIONE SEU ARTEFATO</h2>
     <p id="artifact-desc" style="color: #fff; font-size: 11px; height: 45px; margin-bottom: 15px; padding: 0 20px; line-height: 1.4;"></p>
-    
+
     <div id="selection-zone" class="artifact-zone" style="max-height: 60vh; overflow-y: auto;">
         <div class="artifact-card" style="border-color:var(--violet)" 
     onmouseover="describe('FÍSICO: (Ativo) Multiplica o Dano Físico pelo valor do Dado Especial (até 6x).')" 
@@ -166,16 +177,16 @@ button { background: none; border: 2px solid var(--p-color); color: white; paddi
     <div id="start-action" style="display:none">
         <button onclick="confirmStart()" style="background: var(--p-color); color: #000; font-weight: bold;">INICIAR BATALHA</button>
     </div>
-    
+
     <button onclick="showScreen('main-menu')" style="border-color:#555; font-size: 10px; padding: 8px 20px;">VOLTAR</button>
 </div>
 
 <div id="rules-screen" class="overlay-screen" style="display:none; background: rgba(0,0,0,0.98); flex-direction: column; align-items: center; justify-content: center;">
-    
+
     <h2 style="color: var(--gold); text-shadow: 0 0 15px rgba(255, 234, 0, 0.4); font-size: 20px; margin-bottom: 30px;">MANUAL DE COMBATE</h2>
-    
+
     <div style="width: 260px; color: #fff; font-size: 11px; line-height: 1.6; display: flex; flex-direction: column; gap: 15px;">
-        
+
         <div style="text-align: center;">
             <span style="color: var(--p-color); font-weight: bold; display: block;">🎲 LANÇAMENTO</span>
             <span style="opacity: 0.8;">Arraste e solte para lançar.<br>Força e direção mudam a velocidade.</span>
@@ -211,18 +222,20 @@ button { background: none; border: 2px solid var(--p-color); color: white; paddi
     ">ENTENDIDO</button>
 </div>
 
-    <div class="ui-layer">
-        <div class="hp-group">
-            <div class="hp-bar"><div id="p-hp-fill" class="hp-fill"></div></div>
-            <div id="p-energy-wrap" class="energy-bar-wrap"><div id="p-energy-fill" class="energy-fill"></div></div>
-            <div id="p-label" class="hp-val"></div>
-        </div>
-        <div class="hp-group">
-            <div class="hp-bar"><div id="e-hp-fill" class="hp-fill"></div></div>
-            <div id="e-energy-wrap" class="energy-bar-wrap"><div id="e-energy-fill" class="energy-fill"></div></div>
-            <div id="e-label" class="hp-val"></div>
-        </div>
+<div class="ui-layer">
+    <div class="hp-group">
+        <div class="hp-bar"><div id="p-hp-fill" class="hp-fill"></div></div>
+        <div id="p-relic-display" class="relic-name">---</div>
+        <div id="p-energy-wrap" class="energy-bar-wrap"><div id="p-energy-fill" class="energy-fill"></div></div>
+        <div id="p-label" class="hp-val"></div>
     </div>
+    <div class="hp-group">
+        <div class="hp-bar"><div id="e-hp-fill" class="hp-fill"></div></div>
+        <div id="e-relic-display" class="relic-name">---</div>
+        <div id="e-energy-wrap" class="energy-bar-wrap"><div id="e-energy-fill" class="energy-fill"></div></div>
+        <div id="e-label" class="hp-val"></div>
+    </div>
+</div>
 <div id="ingame-menu">
     <button onclick="abortGame()">ABANDONAR BATALHA</button>
 </div>
@@ -251,7 +264,7 @@ function selectArtifact(choice, element) {
 
     document.querySelectorAll('.artifact-card').forEach(card => card.style.backgroundColor = '#111');
     element.style.backgroundColor = 'rgba(255,255,255,0.2)';
-    
+
     document.getElementById('start-action').style.display = 'block';
 }
 
@@ -263,26 +276,44 @@ function confirmStart() {
 
 function startGame(choice) {
     pState.artifact = choice;
-    const choices = ['physical', 'elemental', 'energy', 'crystal', 'debuff', 'fast_energy', 'kinetic', 'titanium', 'siphon', 'paradox'];
+
+    const choices = ['physical', 'elemental', 'energy', 'crystal', 'debuff', 'fast_energy', 'kinetic', 'titanium', 'siphon', 'paradox', 'morph'];
     eState.artifact = choices[Math.floor(Math.random()*choices.length)];
-    
+
+    const relicNames = {
+        'physical': 'NÚCLEO FÍSICO',
+        'elemental': 'NÚCLEO ELEMENTAL',
+        'energy': 'NÚCLEO DE ENERGIA',
+        'crystal': 'NÚCLEO DE CRISTAL',
+        'debuff': 'NÚCLEO DE CORROSÃO',
+        'fast_energy': 'NÚCLEO RÁPIDO',
+        'kinetic': 'NÚCLEO CINÉTICO',
+        'titanium': 'NÚCLEO DE TITÂNIO',
+        'siphon': 'NÚCLEO SIFÃO',
+        'morph': 'NÚCLEO METAMORFO',
+        'paradox': 'NÚCLEO PARADOXO'
+    };
+
+    document.getElementById('p-relic-display').innerText = relicNames[pState.artifact];
+    document.getElementById('e-relic-display').innerText = relicNames[eState.artifact];
+
     setupEnergyBar('p', pState.artifact); 
     setupEnergyBar('e', eState.artifact);
-    
+
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('selection-screen').style.display = 'none';
-    
+
     document.getElementById('ingame-menu').style.display = 'block'; 
-    
+
     isPlayerTurn = Math.random() > 0.5;
     createDiceSet();
-    
+
     if(!isPlayerTurn) { 
         document.getElementById('orbit-system').style.transform = `rotate(180deg)`; 
         bgCanvas.style.transform = `rotate(180deg)`; 
         setTimeout(enemyPlay, 1000); 
     }
-    
+
     isTransitioning = false; 
     updateScales(); 
     updateUI(); 
@@ -292,16 +323,16 @@ function showScreen(screenId) {
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('selection-screen').style.display = 'none';
     document.getElementById('rules-screen').style.display = 'none';
-    
+
     document.getElementById('ingame-menu').style.display = 'none'; 
-    
+
     document.getElementById(screenId).style.display = 'flex';
 }
 
 function describe(txt) {
     document.getElementById('artifact-desc').innerText = txt;
 }
-    
+
     function createExplosion(x, y, color) {
     for (let i = 0; i < 15; i++) {
         particles.push(new Particle(x, y, color));
@@ -323,7 +354,7 @@ function describe(txt) {
         const wrap = document.getElementById(`${side}-energy-wrap`);
         if(['energy', 'fast_energy', 'morph'].includes(art)) wrap.style.display = 'block'; 
     }
-    
+
     function copyPix() {
     const pixKey = "2bf45462-3260-43c2-8f83-ea9354f641af";
     const btn = document.getElementById('copy-pix-btn');
@@ -344,19 +375,19 @@ function describe(txt) {
         alert("Chave Pix: " + pixKey);
     });
 }
-    
+
 function abortGame() {
     if(confirm("Deseja abandonar a batalha atual?")) {
         // Reseta estados
         pState = { hp: 500, maxHp: 500, armor: 0, vPower: 0, vTurns: 0, regenQueue: [], energy: 0, artifact: null, morphTarget: null, debuffFactor: 1, lastDmgDealt: 0 };
         eState = { hp: 500, maxHp: 500, armor: 0, vPower: 0, vTurns: 0, regenQueue: [], energy: 0, artifact: null, morphTarget: null, debuffFactor: 1, lastDmgDealt: 0 };
-        
+
         diceArray = [];
         particles = [];
-        
+
         document.getElementById('ingame-menu').style.display = 'none';
         showScreen('main-menu');
-        
+
         document.getElementById('orbit-system').style.transform = `rotate(0deg)`;
         bgCanvas.style.transform = `rotate(0deg)`;
         document.getElementById('battle-msg').style.opacity = 0;
@@ -369,7 +400,7 @@ function abortGame() {
         update() { let ds = (isPlayerTurn ? 1 : -1) * (2 + (turnCount * 0.2)); this.z -= ds; if(this.z<1) this.init(); if(this.z>w) this.z=1; }
         draw() { let sx = (this.x/this.z)*(w/2)+w/2, sy = (this.y/this.z)*(h/2)+h/2, r = (1-this.z/w)*2; bctx.beginPath(); bctx.fillStyle=`rgba(255,255,255,${1-this.z/w})`; bctx.arc(sx,sy,r,0,7); bctx.fill(); }
     }
-    
+
     class Particle {
     constructor(x, y, color) {
         this.x = x;
@@ -390,15 +421,15 @@ function abortGame() {
         gctx.save();
         gctx.globalAlpha = this.life;
         gctx.fillStyle = this.color;
-        
+
         gctx.shadowBlur = 10;
         gctx.shadowColor = this.color; 
         // ------------------------------
-        
+
         gctx.beginPath();
         gctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         gctx.fill();
-        
+
         gctx.restore();
     }
 }
@@ -420,7 +451,7 @@ let particles = [];
 roll() { 
     let atk = isPlayerTurn ? pState : eState;
     let art = (atk.artifact === 'morph' && atk.morphTarget) ? atk.morphTarget : atk.artifact;
-    
+
     this.angle += (Math.random() - 0.5) * 2;
 
     if(this.isSpec) { 
@@ -465,7 +496,7 @@ getSpecColor(art) { const map = { physical:'#a100ff', elemental:'#ff6a00', energ
             gctx.save(); gctx.translate(this.x, this.y); gctx.rotate(this.angle); 
             let atk = isPlayerTurn ? pState : eState;
             let art = (atk.artifact === 'morph' && atk.morphTarget) ? atk.morphTarget : atk.artifact;
-            
+
             if(this.isSpec && art === 'paradox') {
                 gctx.fillStyle = "#fff"; gctx.shadowBlur = 15; gctx.shadowColor = "#fff";
                 gctx.fillRect(-18,-18,36,36); gctx.strokeStyle="#000"; gctx.lineWidth=3;
@@ -537,7 +568,7 @@ getSpecColor(art) { const map = { physical:'#a100ff', elemental:'#ff6a00', energ
         const activeArt = (atk.artifact === 'morph') ? atk.morphTarget : atk.artifact;
         const whites = diceArray.filter(d => d.baseColor === '#FFFFFF');
         const dColor = diceArray.filter(d => ['#FFFF00','#151515','#00FF00'].includes(d.baseColor));
-        
+
         let currentDebuff = atk.debuffFactor;
         let mEle = (activeArt === 'elemental') ? specDie.value / currentDebuff : 1 / currentDebuff;
         let mPhy = (activeArt === 'physical') ? specDie.value / currentDebuff : 1 / currentDebuff;
@@ -593,7 +624,7 @@ getSpecColor(art) { const map = { physical:'#a100ff', elemental:'#ff6a00', energ
         let arm = Math.floor(dK * (activeArt === 'titanium' ? specDie.value : mEle));
         let ecoB = (activeArt === 'kinetic') ? Math.floor(atk.lastDmgDealt * (specDie.value/8)) : 0;
         let finalPhys = Math.floor((whites.reduce((s,d)=>s+d.value,0) * mPhy * pMult) + ecoB);
-        
+
         let extraDirect = (activeArt === 'debuff') ? 10 : 0;
         applyDmg(eDmg + finalPhys, def);
         def.hp = Math.max(0, def.hp - ultDmg - extraDirect);
@@ -602,7 +633,7 @@ getSpecColor(art) { const map = { physical:'#a100ff', elemental:'#ff6a00', energ
         logs.push(`⚔️ FIS: ${finalPhys}`);
         if(vDmg > 0) { def.vPower += vDmg; def.vTurns = 2; logs.push(`🟢 VEN: ${vDmg}/t`); }
         if(arm > 0) { atk.armor += arm; logs.push(`⚫ ARM: +${arm}`); }
-        
+
         if(activeArt === 'siphon') {
             let siph = Math.floor((finalPhys + eDmg) * (specDie.value/8));
             atk.hp = Math.min(atk.maxHp, atk.hp + siph);
@@ -646,7 +677,7 @@ updateUI();
         isPlayerTurn = !isPlayerTurn; turnCount++;
         const cur = isPlayerTurn ? pState : eState, opp = isPlayerTurn ? eState : pState;
         let art = (cur.artifact === 'morph') ? cur.morphTarget : cur.artifact;
-        
+
         if(art === 'titanium') {
             let ref = Math.floor(opp.lastDmgDealt * (diceArray.find(d=>d.isSpec).value/8));
             if(ref>0) { applyDmg(ref, opp); notify(`🛡️ REFLEXO: ${ref}`, 'var(--titanium)'); }
@@ -660,7 +691,7 @@ updateUI();
 
     function applyDmg(v, t) { let f = v - t.armor; t.armor = Math.max(0, t.armor-v); if(f>0) t.hp = Math.max(0, t.hp-f); }
     function notify(t, c) { const m = document.getElementById('battle-msg'); m.innerText = t; m.style.color = c; m.style.opacity = 1; setTimeout(() => { if(m.innerText===t) m.style.opacity=0; }, 4000); }
-    
+
     function updateUI() {
         document.getElementById('p-hp-fill').style.width = (pState.hp/pState.maxHp*100)+'%';
         document.getElementById('e-hp-fill').style.width = (eState.hp/eState.maxHp*100)+'%';
@@ -687,7 +718,7 @@ async function strikeAnim(isUlt) {
     const c = document.getElementById(isP ? 'player-core' : 'enemy-core');
     const pCore = document.getElementById('player-core').getBoundingClientRect();
     const eCore = document.getElementById('enemy-core').getBoundingClientRect();
-    
+
     const travelDistance = Math.abs(pCore.top - eCore.top);
     const dist = isP ? -travelDistance : travelDistance;
 
@@ -695,12 +726,12 @@ async function strikeAnim(isUlt) {
     c.style.transform = `translateY(${dist}px) scale(${isUlt ? 0.9 : 0.7})`; 
 
     await new Promise(r => setTimeout(r, 450)); 
-    
+
     const impactX = w / 2;
     const impactY = isP ? eCore.top + (eCore.height/2) : pCore.top + (pCore.height/2);
-    
+
     const color = isP ? '#00f2ff' : '#ff2d55'; 
-    
+
     createExplosion(impactX, impactY, color);
 
     shake = isUlt ? 60 : 25; 
@@ -710,16 +741,16 @@ async function strikeAnim(isUlt) {
 function handleDeath() {
     isTransitioning = true; 
     const vitoria = pState.hp > 0;
-    
+
     document.getElementById('title-msg').innerText = vitoria ? "VITÓRIA!" : "DERROTA...";
-    
+
     setTimeout(() => {
         diceArray = [];
         particles = [];
-        
+
         document.getElementById('ingame-menu').style.display = 'none';
         showScreen('main-menu');
-        
+
         alert(vitoria ? "Protocolo Concluído: Inimigo Neutralizado!" : "Protocolo Falhou: Núcleo Corrompido.");
     }, 1000);
 }
@@ -727,7 +758,7 @@ function handleDeath() {
     function updateScales() { document.getElementById('player-core').style.transform = isPlayerTurn?"scale(1.1)":"scale(0.7)"; document.getElementById('enemy-core').style.transform = isPlayerTurn?"scale(0.7)":"scale(1.1)"; }
     function enemyPlay() { isTouching=true; touchPos={x:w/2,y:h/2}; setTimeout(()=>{ isTouching=false; diceArray.forEach(d=>{ d.roll(); d.isL=true; d.vx=(Math.random()-0.5)*35; d.vy=25; }); processRules(); },1200); }
     function resize() { w=bgCanvas.width=gameCanvas.width=window.innerWidth; h=bgCanvas.height=gameCanvas.height=window.innerHeight; stars=Array.from({length:150},()=>new Star()); }
-    
+
 function getPos(e) {
     if (e.touches && e.touches.length > 0) {
         return { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -781,7 +812,7 @@ gameCanvas.addEventListener('mousedown', startAction);
 window.addEventListener('mousemove', moveAction);
 window.addEventListener('mouseup', endAction);
     window.addEventListener('resize', resize); resize();
-    
+
     function loop() { 
         floatAnim+=0.04; 
         bctx.fillStyle='#000'; bctx.fillRect(0,0,w,h); 
