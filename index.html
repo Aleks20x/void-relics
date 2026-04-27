@@ -113,15 +113,7 @@ button { background: none; border: 2px solid var(--p-color); color: white; paddi
     <div class="menu-buttons">
         <button onclick="showScreen('selection-screen')">INICIAR</button>
         <button onclick="showScreen('rules-screen')">MANUAL DE COMBATE</button>
-        <button onclick="window.open('https://aleks20x.github.io/', '_blank')">MEUS OUTROS PROJETOS 🚀</button>
     </div>
-
-<div style="margin-top: 40px;">
-    <button id="copy-pix-btn" style="border-color: var(--gold); color: var(--gold); font-size: 10px;" onclick="copyPix()">
-        ☕ APOIAR DESENVOLVEDOR VIA PIX QUALQUER VALOR
-    </button>
-</div>
-</div>
 
 <div id="selection-screen" class="overlay-screen" style="display:none">
     <h2 id="title-msg" style="color: var(--p-color);">SELECIONE SEU ARTEFATO</h2>
@@ -362,26 +354,6 @@ function describe(txt) {
         if(['energy', 'fast_energy', 'morph'].includes(art)) wrap.style.display = 'block'; 
     }
 
-    function copyPix() {
-    const pixKey = "2bf45462-3260-43c2-8f83-ea9354f641af";
-    const btn = document.getElementById('copy-pix-btn');
-
-    navigator.clipboard.writeText(pixKey).then(() => {
-        const originalText = btn.innerHTML;
-        btn.innerHTML = "✅ CHAVE COPIADA!";
-        btn.style.borderColor = "#00FF00";
-        btn.style.color = "#00FF00";
-
-        setTimeout(() => {
-            btn.innerHTML = originalText;
-            btn.style.borderColor = "var(--gold)";
-            btn.style.color = "var(--gold)";
-        }, 2000);
-    }).catch(err => {
-        console.error('Erro ao copiar: ', err);
-        alert("Chave Pix: " + pixKey);
-    });
-}
 
 function abortGame() {
     if(confirm("Deseja abandonar a batalha atual?")) {
