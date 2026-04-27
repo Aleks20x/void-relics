@@ -114,6 +114,7 @@ button { background: none; border: 2px solid var(--p-color); color: white; paddi
         <button onclick="showScreen('selection-screen')">INICIAR</button>
         <button onclick="showScreen('rules-screen')">MANUAL DE COMBATE</button>
     </div>
+</div>
 
 <div id="selection-screen" class="overlay-screen" style="display:none">
     <h2 id="title-msg" style="color: var(--p-color);">SELECIONE SEU ARTEFATO</h2>
@@ -328,9 +329,6 @@ function showScreen(screenId) {
     document.getElementById(screenId).style.display = 'flex';
 }
 
-function describe(txt) {
-    document.getElementById('artifact-desc').innerText = txt;
-}
 
     function createExplosion(x, y, color) {
     for (let i = 0; i < 15; i++) {
