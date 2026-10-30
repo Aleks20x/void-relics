@@ -3,12 +3,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>VOID RELICS | Combat Protocol</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root { --p-color: #00f2ff; --e-color: #ff2d55; --violet: #a100ff; --orange: #ff6a00; --gold: #ffea00; --crystal: #ff00ff; --cyan: #00ffff; --scarlet: #ff2400; --kinetic: #00ffaa; --titanium: #999999; --siphon: #ff0044; --paradox: #ffffff; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: 'Orbitron', sans-serif; user-select: none; }
-        canvas { position: fixed; top: 0; left: 0; }
-        #space-bg { z-index: 1; transition: transform 2.5s ease; }
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
+        body { display: grid; place-items: center; font-family: 'Courier New', monospace; user-select: none; }
+        /* Palco lógico fixo 360x640 (9:16), escalado sem deformação para caber em 90vw x 90vh. */
+        #game-stage {
+            position: relative;
+            width: 360px;
+            height: 640px;
+            flex: none;
+            overflow: hidden;
+            background: #000;
+            isolation: isolate;
+            transform: scale(var(--stage-scale, 1));
+            transform-origin: center center;
+        }
+        canvas { position: absolute; top: 0; left: 0; width: 360px; height: 640px; display: block; }
+        #space-bg { z-index: 1; transition: transform 2.5s ease; pointer-events: none; }
         #game-canvas { z-index: 100; touch-action: none; }
         .ui-layer { position: absolute; width: 100%; top: 15px; z-index: 150; display: flex; justify-content: space-around; pointer-events: none; }
         .hp-group { width: 45%; text-align: center; }
@@ -19,12 +31,12 @@
         .energy-bar-wrap { width: 90%; height: 6px; background: rgba(0,0,0,0.6); margin: 6px auto; border-radius: 3px; border: 1px solid #fff; display: none; overflow: hidden; }
         .energy-fill { height: 100%; width: 0%; transition: width 0.3s ease; }
         .hp-val { color: white; font-size: 9px; margin-top: 5px; letter-spacing: 1px; line-height: 1.4; font-weight: bold; text-shadow: 1px 1px 2px #000; }
-        #battle-msg { position: fixed; top: 45%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 11px; text-align: center; z-index: 200; pointer-events: none; opacity: 0; transition: 0.3s; font-weight: bold; background: rgba(0,0,0,0.95); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.4); min-width: 270px; white-space: pre-line; box-shadow: 0 0 40px rgba(0,0,0,1); }
+        #battle-msg { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 11px; text-align: center; z-index: 200; pointer-events: none; opacity: 0; transition: 0.3s; font-weight: bold; background: rgba(0,0,0,0.95); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.4); min-width: 270px; white-space: pre-line; box-shadow: 0 0 40px rgba(0,0,0,1); }
         #orbit-system { position: absolute; width: 100%; height: 100%; z-index: 10; transition: transform 2.5s cubic-bezier(0.6, -0.2, 0.4, 1.2); }
         .core { position: absolute; left: 50%; width: 75px; height: 75px; margin-left: -37.5px; border-radius: 50%; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .player-core { bottom: 15%; background: radial-gradient(circle at 35% 35%, #fff, var(--p-color)); box-shadow: 0 0 30px var(--p-color); }
         .enemy-core { top: 15%; background: radial-gradient(circle at 35% 35%, #fff, var(--e-color)); box-shadow: 0 0 20px var(--e-color); }
-        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; }
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; }
         .artifact-zone { display: flex; flex-wrap: wrap; justify-content: center; max-width: 600px; padding: 20px; }
 .artifact-card { 
     border: 2px solid #444; 
@@ -45,10 +57,10 @@
     align-items: center;
     justify-content: center;
 }    
-button { background: none; border: 2px solid var(--p-color); color: white; padding: 12px 30px; font-family: 'Orbitron'; cursor: pointer; margin-top: 20px; border-radius: 4px; }
-        #ultimate-flash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 300; opacity: 0; pointer-events: none; }
+button { background: none; border: 2px solid var(--p-color); color: white; padding: 12px 30px; font-family: 'Courier New', monospace; cursor: pointer; margin-top: 20px; border-radius: 4px; }
+        #ultimate-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 300; opacity: 0; pointer-events: none; }
     .overlay-screen {
-    position: fixed;
+    position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
     background: rgba(0,0,0,0.95);
@@ -71,7 +83,7 @@ button { background: none; border: 2px solid var(--p-color); color: white; paddi
 }
 
 #ingame-menu {
-    position: fixed;
+    position: absolute;
     bottom: 20px; 
     left: 50%;  
     transform: translateX(-50%);
@@ -104,6 +116,7 @@ button { background: none; border: 2px solid var(--p-color); color: white; paddi
     </style>
 </head>
 <body>
+<div id="game-stage">
     <div id="ultimate-flash"></div>
     <div id="battle-msg"></div>
 <div id="main-menu" class="overlay-screen">
@@ -209,7 +222,7 @@ button { background: none; border: 2px solid var(--p-color); color: white; paddi
         background: rgba(255,255,255,0.05);
         color: #fff;
         border-radius: 25px;
-        font-family: 'Orbitron';
+        font-family: 'Courier New', monospace;
         letter-spacing: 1px;
     ">ENTENDIDO</button>
 </div>
@@ -238,26 +251,49 @@ button { background: none; border: 2px solid var(--p-color); color: white; paddi
         <div id="enemy-core" class="core enemy-core"></div>
         <div id="player-core" class="core player-core"></div>
     </div>
+</div><!-- /#game-stage -->
 
 <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then(reg => console.log('SW ativo!', reg))
-        .catch(err => console.log('Erro no SW', err));
-    });
-  }
 
     const bgCanvas = document.getElementById('space-bg'), bctx = bgCanvas.getContext('2d');
     const gameCanvas = document.getElementById('game-canvas'), gctx = gameCanvas.getContext('2d');
-    let w, h, stars = [], diceArray = [], isTouching = false;
-    let touchPos = {x:0, y:0}, lastTouchPos = {x:0, y:0}, isPlayerTurn = true, isTransitioning = true;
+    const STAGE_WIDTH = 360;
+    const STAGE_HEIGHT = 640;
+    const gameStage = document.getElementById('game-stage');
+    let w = STAGE_WIDTH, h = STAGE_HEIGHT, stars = [], diceArray = [], isTouching = false;
+    let touchPos = {x:w/2, y:h/2}, lastTouchPos = {x:w/2, y:h/2}, isPlayerTurn = true, isTransitioning = true;
     let turnCount = 0, floatAnim = 0, shake = 0, extraTurn = false;
+    let matchId = 0, matchActive = false, matchFinished = false;
+    let enemyPlayTimer = null, enemyRollTimer = null, deathReturnTimer = null;
 
-    let pState = { hp: 500, maxHp: 500, armor: 0, vPower: 0, vTurns: 0, regenQueue: [], energy: 0, artifact: null, morphTarget: null, debuffFactor: 1, lastDmgDealt: 0 };
-    let eState = { hp: 500, maxHp: 500, armor: 0, vPower: 0, vTurns: 0, regenQueue: [], energy: 0, artifact: null, morphTarget: null, debuffFactor: 1, lastDmgDealt: 0 };
+    function createCombatantState(artifact = null) {
+        return { hp: 500, maxHp: 500, armor: 0, vPower: 0, vTurns: 0, regenQueue: [], energy: 0, artifact, morphTarget: null, debuffFactor: 1, lastDmgDealt: 0 };
+    }
+    let pState = createCombatantState();
+    let eState = createCombatantState();
 
-let selectedChoice = null;
+    function clearMatchTimers() {
+        clearTimeout(enemyPlayTimer);
+        clearTimeout(enemyRollTimer);
+        clearTimeout(deathReturnTimer);
+        enemyPlayTimer = enemyRollTimer = deathReturnTimer = null;
+    }
+
+    function scheduleEnemyPlay(delay = 1000) {
+        clearTimeout(enemyPlayTimer);
+        const session = matchId;
+        enemyPlayTimer = setTimeout(() => {
+            if (session !== matchId || !matchActive || matchFinished || isPlayerTurn) return;
+            enemyPlay();
+        }, delay);
+    }
+
+    let selectedChoice = null;
+
+function describe(text) {
+    const desc = document.getElementById('artifact-desc');
+    if (desc) desc.innerText = text;
+}
 
 function selectArtifact(choice, element) {
     selectedChoice = choice;
@@ -275,56 +311,91 @@ function confirmStart() {
 }
 
 function startGame(choice) {
-    pState.artifact = choice;
+    if (!choice) return;
+
+    // Invalida timers e operações assíncronas da partida anterior.
+    matchId++;
+    clearMatchTimers();
+    matchActive = true;
+    matchFinished = false;
+    isTransitioning = true;
+
+    // Reinicia TODOS os atributos dos dois combatentes.
+    pState = createCombatantState(choice);
+    eState = createCombatantState();
+
+    // Reinicia dados, partículas, turno e variáveis de combate.
+    diceArray = [];
+    particles = [];
+    isTouching = false;
+    touchPos = { x: STAGE_WIDTH / 2, y: STAGE_HEIGHT / 2 };
+    lastTouchPos = { ...touchPos };
+    turnCount = 0;
+    floatAnim = 0;
+    shake = 0;
+    extraTurn = false;
 
     const choices = ['physical', 'elemental', 'energy', 'crystal', 'debuff', 'fast_energy', 'kinetic', 'titanium', 'siphon', 'paradox', 'morph'];
-    eState.artifact = choices[Math.floor(Math.random()*choices.length)];
+    eState.artifact = choices[Math.floor(Math.random() * choices.length)];
 
     const relicNames = {
-        'physical': 'NÚCLEO FÍSICO',
-        'elemental': 'NÚCLEO ELEMENTAL',
-        'energy': 'NÚCLEO DE ENERGIA',
-        'crystal': 'NÚCLEO DE CRISTAL',
-        'debuff': 'NÚCLEO DE CORROSÃO',
-        'fast_energy': 'NÚCLEO RÁPIDO',
-        'kinetic': 'NÚCLEO CINÉTICO',
-        'titanium': 'NÚCLEO DE TITÂNIO',
-        'siphon': 'NÚCLEO SIFÃO',
-        'morph': 'NÚCLEO METAMORFO',
-        'paradox': 'NÚCLEO PARADOXO'
+        physical: 'NÚCLEO FÍSICO', elemental: 'NÚCLEO ELEMENTAL', energy: 'NÚCLEO DE ENERGIA',
+        crystal: 'NÚCLEO DE CRISTAL', debuff: 'NÚCLEO DE CORROSÃO', fast_energy: 'NÚCLEO RÁPIDO',
+        kinetic: 'NÚCLEO CINÉTICO', titanium: 'NÚCLEO DE TITÂNIO', siphon: 'NÚCLEO SIFÃO',
+        morph: 'NÚCLEO METAMORFO', paradox: 'NÚCLEO PARADOXO'
     };
 
     document.getElementById('p-relic-display').innerText = relicNames[pState.artifact];
     document.getElementById('e-relic-display').innerText = relicNames[eState.artifact];
 
-    setupEnergyBar('p', pState.artifact); 
+    setupEnergyBar('p', pState.artifact);
     setupEnergyBar('e', eState.artifact);
 
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('selection-screen').style.display = 'none';
+    document.getElementById('rules-screen').style.display = 'none';
+    document.getElementById('ingame-menu').style.display = 'block';
+    document.getElementById('battle-msg').style.opacity = 0;
+    document.getElementById('ultimate-flash').style.opacity = 0;
 
-    document.getElementById('ingame-menu').style.display = 'block'; 
+    // Desfaz a rotação/transformação visual deixada pela batalha anterior.
+    document.getElementById('orbit-system').style.transform = 'rotate(0deg)';
+    bgCanvas.style.transform = 'rotate(0deg)';
+    const playerCore = document.getElementById('player-core');
+    const enemyCore = document.getElementById('enemy-core');
+    playerCore.style.transition = '';
+    enemyCore.style.transition = '';
+    playerCore.style.transform = 'scale(1.1)';
+    enemyCore.style.transform = 'scale(0.7)';
 
     isPlayerTurn = Math.random() > 0.5;
     createDiceSet();
+    updateScales();
+    updateUI();
+    isTransitioning = false;
 
-    if(!isPlayerTurn) { 
-        document.getElementById('orbit-system').style.transform = `rotate(180deg)`; 
-        bgCanvas.style.transform = `rotate(180deg)`; 
-        setTimeout(enemyPlay, 1000); 
+    if (!isPlayerTurn) {
+        document.getElementById('orbit-system').style.transform = 'rotate(180deg)';
+        bgCanvas.style.transform = 'rotate(180deg)';
+        scheduleEnemyPlay(1000);
     }
-
-    isTransitioning = false; 
-    updateScales(); 
-    updateUI(); 
 }
 
 function showScreen(screenId) {
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('selection-screen').style.display = 'none';
     document.getElementById('rules-screen').style.display = 'none';
+    document.getElementById('ingame-menu').style.display = 'none';
 
-    document.getElementById('ingame-menu').style.display = 'none'; 
+    if (screenId === 'selection-screen') {
+        selectedChoice = null;
+        document.getElementById('title-msg').innerText = 'SELECIONE SEU ARTEFATO';
+        document.getElementById('artifact-desc').innerText = '';
+        document.getElementById('start-action').style.display = 'none';
+        document.querySelectorAll('.artifact-card').forEach(card => {
+            card.style.backgroundColor = '#111';
+        });
+    }
 
     document.getElementById(screenId).style.display = 'flex';
 }
@@ -349,25 +420,39 @@ function showScreen(screenId) {
 
     function setupEnergyBar(side, art) {
         const wrap = document.getElementById(`${side}-energy-wrap`);
-        if(['energy', 'fast_energy', 'morph'].includes(art)) wrap.style.display = 'block'; 
+        const fill = document.getElementById(`${side}-energy-fill`);
+        const usesEnergy = ['energy', 'fast_energy'].includes(art);
+        wrap.style.display = usesEnergy ? 'block' : 'none';
+        fill.style.width = '0%';
     }
 
 
 function abortGame() {
-    if(confirm("Deseja abandonar a batalha atual?")) {
-        // Reseta estados
-        pState = { hp: 500, maxHp: 500, armor: 0, vPower: 0, vTurns: 0, regenQueue: [], energy: 0, artifact: null, morphTarget: null, debuffFactor: 1, lastDmgDealt: 0 };
-        eState = { hp: 500, maxHp: 500, armor: 0, vPower: 0, vTurns: 0, regenQueue: [], energy: 0, artifact: null, morphTarget: null, debuffFactor: 1, lastDmgDealt: 0 };
+    if (confirm("Deseja abandonar a batalha atual?")) {
+        matchId++;
+        clearMatchTimers();
+        matchActive = false;
+        matchFinished = false;
+        isTransitioning = true;
 
+        pState = createCombatantState();
+        eState = createCombatantState();
         diceArray = [];
         particles = [];
+        isTouching = false;
+        extraTurn = false;
+        turnCount = 0;
+        shake = 0;
 
         document.getElementById('ingame-menu').style.display = 'none';
-        showScreen('main-menu');
-
-        document.getElementById('orbit-system').style.transform = `rotate(0deg)`;
-        bgCanvas.style.transform = `rotate(0deg)`;
+        document.getElementById('orbit-system').style.transform = 'rotate(0deg)';
+        bgCanvas.style.transform = 'rotate(0deg)';
         document.getElementById('battle-msg').style.opacity = 0;
+        document.getElementById('ultimate-flash').style.opacity = 0;
+        setupEnergyBar('p', null);
+        setupEnergyBar('e', null);
+        updateUI();
+        showScreen('main-menu');
     }
 }
 
@@ -481,7 +566,7 @@ getSpecColor(art) { const map = { physical:'#a100ff', elemental:'#ff6a00', energ
             } else if(this.isSpec && atk.artifact === 'morph' && !atk.morphTarget) {
                 gctx.fillStyle = "#fff"; gctx.shadowBlur = 20; gctx.shadowColor = "#fff";
                 gctx.beginPath(); for(let i=0; i<10; i++){ let r = i%2===0?25:12; let a = (i/10)*Math.PI*2; gctx.lineTo(Math.cos(a)*r, Math.sin(a)*r); }
-                gctx.closePath(); gctx.fill(); gctx.fillStyle="#000"; gctx.font="bold 18px Orbitron"; gctx.textAlign="center"; gctx.textBaseline="middle";
+                gctx.closePath(); gctx.fill(); gctx.fillStyle="#000"; gctx.font="bold 18px monospace"; gctx.textAlign="center"; gctx.textBaseline="middle";
                 gctx.fillText(this.value, 0, 2);
             } else {
                 gctx.fillStyle = this.color; if(this.isSpec) { gctx.shadowBlur = 15; gctx.shadowColor = this.color; }
@@ -497,7 +582,7 @@ getSpecColor(art) { const map = { physical:'#a100ff', elemental:'#ff6a00', energ
             gctx.restore(); 
         }
         drawDots() { const dots = {1:[[0,0]], 2:[[-9,-9],[9,9]], 3:[[-9,-9],[0,0],[9,9]], 4:[[-9,-9],[9,-9],[-9,9],[9,9]], 5:[[-9,-9],[9,-9],[0,0],[-9,9],[9,9]], 6:[[-9,-9],[9,-9],[-9,0],[9,0],[-9,9],[9,9]]}; gctx.fillStyle = (this.color==='#151515'||this.isSpec)?"#fff":"#000"; dots[this.value].forEach(p => { gctx.beginPath(); gctx.arc(p[0],p[1],4,0,7); gctx.fill(); }); }
-        drawNum() { gctx.fillStyle="#fff"; gctx.font="bold 18px Orbitron"; gctx.textAlign="center"; gctx.textBaseline="middle"; gctx.fillText(this.value, 0, 2); }
+        drawNum() { gctx.fillStyle="#fff"; gctx.font="bold 18px monospace"; gctx.textAlign="center"; gctx.textBaseline="middle"; gctx.fillText(this.value, 0, 2); }
     }
 
     function checkParadoxRule(dice) {
@@ -524,9 +609,15 @@ getSpecColor(art) { const map = { physical:'#a100ff', elemental:'#ff6a00', energ
     }
 
     async function processRules() {
+        const session = matchId;
+        if (!matchActive || matchFinished || diceArray.length === 0) return;
         isTransitioning = true;
-        while(!diceArray.every(d => d.isS)) await new Promise(r => setTimeout(r, 100));
+        while (!diceArray.every(d => d.isS)) {
+            if (session !== matchId || !matchActive || matchFinished) return;
+            await new Promise(r => setTimeout(r, 100));
+        }
         await new Promise(r => setTimeout(r, 600));
+        if (session !== matchId || !matchActive || matchFinished) return;
 
         let atk = isPlayerTurn ? pState : eState, def = isPlayerTurn ? eState : pState;
         let specDie = diceArray.find(d => d.isSpec);
@@ -538,8 +629,12 @@ getSpecColor(art) { const map = { physical:'#a100ff', elemental:'#ff6a00', energ
             logs.push(`🌈 DNA: ${atk.morphTarget.toUpperCase()}`);
             specDie.isS = false; specDie.vy = -18; specDie.vx = (Math.random()-0.5)*15;
             specDie.roll();
-            while(!specDie.isS) await new Promise(r => setTimeout(r, 50));
+            while (!specDie.isS) {
+                if (session !== matchId || !matchActive || matchFinished) return;
+                await new Promise(r => setTimeout(r, 50));
+            }
             await new Promise(r => setTimeout(r, 400));
+            if (session !== matchId || !matchActive || matchFinished) return;
         }
 
         const activeArt = (atk.artifact === 'morph') ? atk.morphTarget : atk.artifact;
@@ -623,7 +718,8 @@ getSpecColor(art) { const map = { physical:'#a100ff', elemental:'#ff6a00', energ
         atk.debuffFactor = 1;
 
         notify(logs.join("\n"), isPlayerTurn ? 'var(--p-color)' : 'var(--e-color)');
-        updateUI(); await strikeAnim(ultDmg > 0);
+        updateUI(); await strikeAnim(ultDmg > 0, session);
+        if (session !== matchId || !matchActive || matchFinished) return;
 
 [pState, eState].forEach(s => {
     if(s.regenQueue.length > 0) {
@@ -638,9 +734,15 @@ getSpecColor(art) { const map = { physical:'#a100ff', elemental:'#ff6a00', energ
 });
 updateUI();
 
-        if(pState.hp<=0||eState.hp<=0) { handleDeath(); return; }
-        if(extraTurn) { extraTurn = false; createDiceSet(); isTransitioning = false; if(!isPlayerTurn) enemyPlay(); } 
-        else { swapTurn(); }
+        if (pState.hp <= 0 || eState.hp <= 0) { handleDeath(); return; }
+        if (extraTurn) {
+            extraTurn = false;
+            createDiceSet();
+            isTransitioning = false;
+            if (!isPlayerTurn) scheduleEnemyPlay(0);
+        } else {
+            swapTurn();
+        }
     }
 
     function triggerUltAnim() {
@@ -651,6 +753,7 @@ updateUI();
     }
 
     async function swapTurn() {
+        if (!matchActive || matchFinished) return;
         isPlayerTurn = !isPlayerTurn; turnCount++;
         const cur = isPlayerTurn ? pState : eState, opp = isPlayerTurn ? eState : pState;
         let art = (cur.artifact === 'morph') ? cur.morphTarget : cur.artifact;
@@ -660,10 +763,14 @@ updateUI();
             if(ref>0) { applyDmg(ref, opp); notify(`🛡️ REFLEXO: ${ref}`, 'var(--titanium)'); }
         }
 
-        updateUI(); if(pState.hp<=0||eState.hp<=0) { handleDeath(); return; }
-        document.getElementById('orbit-system').style.transform = `rotate(${isPlayerTurn?0:180}deg)`;
-        bgCanvas.style.transform = `rotate(${isPlayerTurn?0:180}deg)`;
-        updateScales(); createDiceSet(); isTransitioning=false; if(!isPlayerTurn) setTimeout(enemyPlay, 1000);
+        updateUI();
+        if (pState.hp <= 0 || eState.hp <= 0) { handleDeath(); return; }
+        document.getElementById('orbit-system').style.transform = `rotate(${isPlayerTurn ? 0 : 180}deg)`;
+        bgCanvas.style.transform = `rotate(${isPlayerTurn ? 0 : 180}deg)`;
+        updateScales();
+        createDiceSet();
+        isTransitioning = false;
+        if (!isPlayerTurn) scheduleEnemyPlay(1000);
     }
 
     function applyDmg(v, t) { let f = v - t.armor; t.armor = Math.max(0, t.armor-v); if(f>0) t.hp = Math.max(0, t.hp-f); }
@@ -690,61 +797,107 @@ updateUI();
         } else wrap.style.display = 'none';
     }
 
-async function strikeAnim(isUlt) { 
+async function strikeAnim(isUlt, session = matchId) {
     const isP = isPlayerTurn;
     const c = document.getElementById(isP ? 'player-core' : 'enemy-core');
     const pCore = document.getElementById('player-core').getBoundingClientRect();
     const eCore = document.getElementById('enemy-core').getBoundingClientRect();
+    const stageRect = gameStage.getBoundingClientRect();
+    const stageScale = stageRect.height / STAGE_HEIGHT;
 
-    const travelDistance = Math.abs(pCore.top - eCore.top);
+    const travelDistance = Math.abs(pCore.top - eCore.top) / stageScale;
     const dist = isP ? -travelDistance : travelDistance;
 
     c.style.transition = "transform 0.45s cubic-bezier(0.4, 0, 0.2, 1)";
-    c.style.transform = `translateY(${dist}px) scale(${isUlt ? 0.9 : 0.7})`; 
+    c.style.transform = `translateY(${dist}px) scale(${isUlt ? 0.9 : 0.7})`;
 
-    await new Promise(r => setTimeout(r, 450)); 
+    await new Promise(r => setTimeout(r, 450));
+    if (session !== matchId || !matchActive || matchFinished) return;
 
-    const impactX = w / 2;
-    const impactY = isP ? eCore.top + (eCore.height/2) : pCore.top + (pCore.height/2);
-
-    const color = isP ? '#00f2ff' : '#ff2d55'; 
+    const impactClientY = isP ? eCore.top + (eCore.height / 2) : pCore.top + (pCore.height / 2);
+    const impactX = STAGE_WIDTH / 2;
+    const impactY = (impactClientY - stageRect.top) / stageScale;
+    const color = isP ? '#00f2ff' : '#ff2d55';
 
     createExplosion(impactX, impactY, color);
-
-    shake = isUlt ? 60 : 25; 
-    c.style.transform = `translateY(0) scale(1.1)`; 
+    shake = isUlt ? 60 : 25;
+    c.style.transform = `translateY(0) scale(1.1)`;
 }
 
 function handleDeath() {
-    isTransitioning = true; 
+    if (matchFinished || !matchActive) return;
+    matchFinished = true;
+    matchActive = false;
+    isTransitioning = true;
+    const session = ++matchId; // invalida qualquer callback antigo da batalha encerrada
+    clearTimeout(enemyPlayTimer);
+    clearTimeout(enemyRollTimer);
+    enemyPlayTimer = enemyRollTimer = null;
+
     const vitoria = pState.hp > 0;
-
     document.getElementById('title-msg').innerText = vitoria ? "VITÓRIA!" : "DERROTA...";
+    isTouching = false;
 
-    setTimeout(() => {
+    deathReturnTimer = setTimeout(() => {
+        if (session !== matchId) return;
         diceArray = [];
         particles = [];
-
         document.getElementById('ingame-menu').style.display = 'none';
+        document.getElementById('orbit-system').style.transform = 'rotate(0deg)';
+        bgCanvas.style.transform = 'rotate(0deg)';
         showScreen('main-menu');
-
         alert(vitoria ? "Protocolo Concluído: Inimigo Neutralizado!" : "Protocolo Falhou: Núcleo Corrompido.");
     }, 1000);
 }
 
-    function updateScales() { document.getElementById('player-core').style.transform = isPlayerTurn?"scale(1.1)":"scale(0.7)"; document.getElementById('enemy-core').style.transform = isPlayerTurn?"scale(0.7)":"scale(1.1)"; }
-    function enemyPlay() { isTouching=true; touchPos={x:w/2,y:h/2}; setTimeout(()=>{ isTouching=false; diceArray.forEach(d=>{ d.roll(); d.isL=true; d.vx=(Math.random()-0.5)*35; d.vy=25; }); processRules(); },1200); }
-    function resize() { w=bgCanvas.width=gameCanvas.width=window.innerWidth; h=bgCanvas.height=gameCanvas.height=window.innerHeight; stars=Array.from({length:150},()=>new Star()); }
+    function updateScales() {
+        document.getElementById('player-core').style.transform = isPlayerTurn ? "scale(1.1)" : "scale(0.7)";
+        document.getElementById('enemy-core').style.transform = isPlayerTurn ? "scale(0.7)" : "scale(1.1)";
+    }
+
+    function enemyPlay() {
+        if (!matchActive || matchFinished || isPlayerTurn || isTransitioning) return;
+        const session = matchId;
+        isTouching = true;
+        touchPos = { x: w / 2, y: h / 2 };
+        enemyRollTimer = setTimeout(() => {
+            if (session !== matchId || !matchActive || matchFinished) return;
+            isTouching = false;
+            diceArray.forEach(d => {
+                d.roll(); d.isL = true; d.isS = false;
+                d.vx = (Math.random() - 0.5) * 35; d.vy = 25;
+            });
+            processRules();
+        }, 1200);
+    }
+
+    function resize() {
+        w = STAGE_WIDTH;
+        h = STAGE_HEIGHT;
+        bgCanvas.width = gameCanvas.width = STAGE_WIDTH;
+        bgCanvas.height = gameCanvas.height = STAGE_HEIGHT;
+
+        const scale = Math.min(
+            (window.innerWidth * 0.90) / STAGE_WIDTH,
+            (window.innerHeight * 0.90) / STAGE_HEIGHT
+        );
+        gameStage.style.setProperty('--stage-scale', scale.toFixed(5));
+        stars = Array.from({ length: 150 }, () => new Star());
+    }
 
 function getPos(e) {
-    if (e.touches && e.touches.length > 0) {
-        return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    }
-    return { x: e.clientX, y: e.clientY };
+    const source = (e.touches && e.touches.length > 0) ? e.touches[0] : e;
+    const rect = gameCanvas.getBoundingClientRect();
+    const scaleX = STAGE_WIDTH / rect.width;
+    const scaleY = STAGE_HEIGHT / rect.height;
+    return {
+        x: (source.clientX - rect.left) * scaleX,
+        y: (source.clientY - rect.top) * scaleY
+    };
 }
 
 const startAction = (e) => {
-    if(!isPlayerTurn || isTransitioning) return;
+    if (!matchActive || matchFinished || !isPlayerTurn || isTransitioning) return;
     isTouching = true;
     const pos = getPos(e);
     touchPos = { x: pos.x, y: pos.y };
@@ -760,7 +913,7 @@ const moveAction = (e) => {
 };
 
 const endAction = () => {
-    if(isTouching) {
+    if (isTouching && matchActive && !matchFinished && isPlayerTurn && !isTransitioning) {
         isTouching = false;
         let dx = touchPos.x - lastTouchPos.x;
         let dy = touchPos.y - lastTouchPos.y;
@@ -781,8 +934,8 @@ const endAction = () => {
     }
 };
 
-gameCanvas.addEventListener('touchstart', startAction);
-gameCanvas.addEventListener('touchmove', moveAction);
+gameCanvas.addEventListener('touchstart', e => { e.preventDefault(); startAction(e); }, { passive: false });
+gameCanvas.addEventListener('touchmove', e => { e.preventDefault(); moveAction(e); }, { passive: false });
 gameCanvas.addEventListener('touchend', endAction);
 
 gameCanvas.addEventListener('mousedown', startAction);
